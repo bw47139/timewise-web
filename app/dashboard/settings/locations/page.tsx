@@ -5,8 +5,30 @@ import RequireAuth from "@/components/RequireAuth";
 import RequireRole from "@/components/auth/RequireRole";
 import { Loader2, Plus, Pencil, Power } from "lucide-react";
 
-const API =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+/**
+ * ⚠️ CANONICAL RULE
+ * Frontend MUST call /api/*
+ * NEXT_PUBLIC_API_BASE_URL = origin only
+ * Next.js rewrites handle backend routing
+ */
+
+/* -------------------------------------------------------
+   Constants
+------------------------------------------------------- */
+
+const TIMEZONES = [
+  "America/New_York",
+  "America/Chicago",
+  "America/Denver",
+  "America/Los_Angeles",
+];
+
+const PAY_PERIOD_TYPES = [
+  { value: "WEEKLY", label: "Weekly" },
+  { value: "BIWEEKLY", label: "Bi-Weekly" },
+  { value: "SEMIMONTHLY", label: "Semi-Monthly" },
+  { value: "MONTHLY", label: "Monthly" },
+];
 
 /* -------------------------------------------------------
    Types
@@ -17,11 +39,8 @@ interface Location {
   name: string;
   code?: string | null;
   timezone: string;
-  addressLine1?: string | null;
-  addressLine2?: string | null;
-  city?: string | null;
-  state?: string | null;
-  zip?: string | null;
+  industry?: string | null;
+  payPeriodType?: string | null;
   isActive: boolean;
 }
 
@@ -40,31 +59,28 @@ export default function LocationsSettingsPage() {
     name: "",
     code: "",
     timezone: "America/New_York",
-    addressLine1: "",
-    addressLine2: "",
-    city: "",
-    state: "",
-    zip: "",
+    industry: "General",
+    payPeriodType: "WEEKLY",
+    isActive: true,
   });
 
   /* -------------------------------------------------------
-     Load locations (cookie auth)
+     Load locations
   ------------------------------------------------------- */
 
   async function loadLocations() {
     setLoading(true);
     try {
-      const res = await fetch(`${API}/api/locations`, {
+      const res = await fetch("/api/location", {
         credentials: "include",
       });
 
-      if (!res.ok) {
-        throw new Error("Failed to load locations");
-      }
+      if (!res.ok) throw new Error("Failed to load locations");
 
-      setLocations(await res.json());
+      const data = await res.json();
+      setLocations(data);
     } catch (err) {
-      console.error(err);
+      console.error("Load locations failed:", err);
       alert("Failed to load locations");
     } finally {
       setLoading(false);
@@ -85,11 +101,9 @@ export default function LocationsSettingsPage() {
       name: "",
       code: "",
       timezone: "America/New_York",
-      addressLine1: "",
-      addressLine2: "",
-      city: "",
-      state: "",
-      zip: "",
+      industry: "General",
+      payPeriodType: "WEEKLY",
+      isActive: true,
     });
     setModalOpen(true);
   }
@@ -117,9 +131,7 @@ export default function LocationsSettingsPage() {
 
     try {
       const res = await fetch(
-        editing
-          ? `${API}/api/locations/${editing.id}`
-          : `${API}/api/locations`,
+        editing ? `/api/location/${editing.id}` : "/api/location",
         {
           method: editing ? "PUT" : "POST",
           headers: { "Content-Type": "application/json" },
@@ -136,26 +148,25 @@ export default function LocationsSettingsPage() {
       closeModal();
       loadLocations();
     } catch (err: any) {
-      console.error(err);
+      console.error("Save location failed:", err);
       alert(err.message || "Failed to save location");
     }
   }
 
   /* -------------------------------------------------------
-     Enable / Disable location (soft)
+     Enable / Disable location
   ------------------------------------------------------- */
 
   async function toggleLocation(loc: Location) {
     if (
-      !window.confirm(
+      !confirm(
         `${loc.isActive ? "Disable" : "Enable"} this location?`
       )
-    ) {
+    )
       return;
-    }
 
     try {
-      const res = await fetch(`${API}/api/locations/${loc.id}/status`, {
+      const res = await fetch(`/api/location/${loc.id}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -169,8 +180,8 @@ export default function LocationsSettingsPage() {
 
       loadLocations();
     } catch (err: any) {
-      console.error(err);
-      alert(err.message || "Failed to update location status");
+      console.error("Toggle location failed:", err);
+      alert(err.message || "Failed to update status");
     }
   }
 
@@ -180,27 +191,27 @@ export default function LocationsSettingsPage() {
 
   return (
     <RequireAuth>
-      <RequireRole allow={["OWNER", "ADMIN"]}>
+      <RequireRole allow={["ADMIN"]}>
         <div className="space-y-6">
           {/* Header */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-semibold">Locations</h1>
               <p className="text-sm text-muted-foreground">
-                Manage physical locations for your organization
+                Manage locations for your organization
               </p>
             </div>
 
             <button
               onClick={openAdd}
-              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground"
             >
               <Plus className="h-4 w-4" />
               Add Location
             </button>
           </div>
 
-          {/* Locations table */}
+          {/* Table */}
           <div className="rounded-xl border bg-card">
             {loading ? (
               <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
@@ -213,7 +224,7 @@ export default function LocationsSettingsPage() {
                   <tr>
                     <th className="px-4 py-2 text-left">Name</th>
                     <th className="px-4 py-2 text-left">Timezone</th>
-                    <th className="px-4 py-2 text-left">City</th>
+                    <th className="px-4 py-2 text-left">Pay Period</th>
                     <th className="px-4 py-2 text-center">Status</th>
                     <th className="px-4 py-2 text-right">Actions</th>
                   </tr>
@@ -222,59 +233,42 @@ export default function LocationsSettingsPage() {
                   {locations.map((loc) => (
                     <tr
                       key={loc.id}
-                      className={`border-b last:border-b-0 ${
-                        !loc.isActive ? "opacity-50" : ""
-                      }`}
+                      className={!loc.isActive ? "opacity-50" : ""}
                     >
                       <td className="px-4 py-2 font-medium">{loc.name}</td>
                       <td className="px-4 py-2">{loc.timezone}</td>
                       <td className="px-4 py-2">
-                        {loc.city
-                          ? `${loc.city}, ${loc.state ?? ""}`
-                          : "—"}
+                        {loc.payPeriodType || "—"}
                       </td>
                       <td className="px-4 py-2 text-center">
                         {loc.isActive ? "Active" : "Disabled"}
                       </td>
-                      <td className="px-4 py-2 text-right">
-                        <div className="flex justify-end gap-2">
-                          <button
-                            onClick={() => openEdit(loc)}
-                            className="rounded-md border p-1 hover:bg-muted"
-                          >
-                            <Pencil className="h-4 w-4" />
-                          </button>
-                          <button
-                            onClick={() => toggleLocation(loc)}
-                            className="rounded-md border p-1 hover:bg-muted"
-                          >
-                            <Power className="h-4 w-4" />
-                          </button>
-                        </div>
+                      <td className="px-4 py-2 flex justify-end gap-2">
+                        <button
+                          onClick={() => openEdit(loc)}
+                          className="rounded-md border p-1"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </button>
+                        <button
+                          onClick={() => toggleLocation(loc)}
+                          className="rounded-md border p-1"
+                        >
+                          <Power className="h-4 w-4" />
+                        </button>
                       </td>
                     </tr>
                   ))}
-
-                  {locations.length === 0 && (
-                    <tr>
-                      <td
-                        colSpan={5}
-                        className="px-4 py-8 text-center text-sm text-muted-foreground"
-                      >
-                        No locations created yet.
-                      </td>
-                    </tr>
-                  )}
                 </tbody>
               </table>
             )}
           </div>
         </div>
 
-        {/* Add / Edit Modal */}
+        {/* Modal */}
         {modalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-            <div className="w-full max-w-lg rounded-xl bg-card p-6 shadow-xl">
+            <div className="w-full max-w-lg rounded-xl bg-card p-6">
               <h2 className="mb-4 text-lg font-semibold">
                 {editing ? "Edit Location" : "Add Location"}
               </h2>
@@ -289,15 +283,6 @@ export default function LocationsSettingsPage() {
                   className="col-span-2 rounded border px-3 py-2 text-sm"
                 />
 
-                <input
-                  placeholder="Code (optional)"
-                  value={form.code || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, code: e.target.value })
-                  }
-                  className="rounded border px-3 py-2 text-sm"
-                />
-
                 <select
                   value={form.timezone}
                   onChange={(e) =>
@@ -305,67 +290,38 @@ export default function LocationsSettingsPage() {
                   }
                   className="rounded border px-3 py-2 text-sm"
                 >
-                  <option value="America/New_York">
-                    America/New_York
-                  </option>
-                  <option value="America/Chicago">
-                    America/Chicago
-                  </option>
-                  <option value="America/Denver">
-                    America/Denver
-                  </option>
-                  <option value="America/Los_Angeles">
-                    America/Los_Angeles
-                  </option>
+                  {TIMEZONES.map((tz) => (
+                    <option key={tz} value={tz}>
+                      {tz}
+                    </option>
+                  ))}
                 </select>
 
-                <input
-                  placeholder="Address Line 1"
-                  value={form.addressLine1 || ""}
+                <select
+                  value={form.payPeriodType || "WEEKLY"}
                   onChange={(e) =>
-                    setForm({ ...form, addressLine1: e.target.value })
-                  }
-                  className="col-span-2 rounded border px-3 py-2 text-sm"
-                />
-
-                <input
-                  placeholder="City"
-                  value={form.city || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, city: e.target.value })
+                    setForm({ ...form, payPeriodType: e.target.value })
                   }
                   className="rounded border px-3 py-2 text-sm"
-                />
-
-                <input
-                  placeholder="State"
-                  value={form.state || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, state: e.target.value })
-                  }
-                  className="rounded border px-3 py-2 text-sm"
-                />
-
-                <input
-                  placeholder="ZIP"
-                  value={form.zip || ""}
-                  onChange={(e) =>
-                    setForm({ ...form, zip: e.target.value })
-                  }
-                  className="rounded border px-3 py-2 text-sm"
-                />
+                >
+                  {PAY_PERIOD_TYPES.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="mt-6 flex justify-end gap-2">
                 <button
                   onClick={closeModal}
-                  className="rounded-lg border px-4 py-2 text-sm"
+                  className="rounded border px-4 py-2"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={saveLocation}
-                  className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground"
+                  className="rounded bg-primary px-4 py-2 text-primary-foreground"
                 >
                   Save
                 </button>

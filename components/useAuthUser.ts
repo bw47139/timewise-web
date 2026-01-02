@@ -2,9 +2,6 @@
 
 import { useEffect, useState } from "react";
 
-const API =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
-
 export type Role = "ADMIN" | "MANAGER" | "SUPERVISOR";
 
 export type AuthUser = {
@@ -23,9 +20,11 @@ export function useAuthUser() {
 
     async function loadUser() {
       try {
-        const res = await fetch(`${API}/api/auth/current`, {
+        // ✅ IMPORTANT:
+        // Always call /api/* so Next.js rewrites apply
+        const res = await fetch("/api/auth/current", {
           method: "GET",
-          credentials: "include", // 🔒 REQUIRED for httpOnly cookie
+          credentials: "include", // 🔒 required for httpOnly cookie
           headers: {
             Accept: "application/json",
           },

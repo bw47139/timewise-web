@@ -1,10 +1,8 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-
-const API =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
+import { useAuthUser } from "./useAuthUser";
 
 export default function RequireAuth({
   children,
@@ -12,37 +10,25 @@ export default function RequireAuth({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const [checking, setChecking] = useState(true);
+  const { user, loading } = useAuthUser();
 
   useEffect(() => {
-    async function checkAuth() {
-      try {
-        const res = await fetch(`${API}/api/auth/current`, {
-          method: "GET",
-          credentials: "include", // 🔥 REQUIRED
-        });
-
-        if (!res.ok) {
-          throw new Error("Not authenticated");
-        }
-
-        // ✅ Auth OK
-        setChecking(false);
-      } catch (error) {
-        console.warn("Auth check failed, redirecting to login");
-        router.replace("/login");
-      }
+    if (!loading && !user) {
+      console.warn("🔐 Auth check failed, redirecting to login");
+      router.replace("/login");
     }
+  }, [loading, user, router]);
 
-    checkAuth();
-  }, [router]);
-
-  if (checking) {
+  if (loading) {
     return (
-      <div className="p-6 text-gray-500">
-        Checking authentication…
+      <div className="flex items-center justify-center h-screen">
+        <span className="text-gray-500">Checking authentication…</span>
       </div>
     );
+  }
+
+  if (!user) {
+    return null; // redirecting
   }
 
   return <>{children}</>;

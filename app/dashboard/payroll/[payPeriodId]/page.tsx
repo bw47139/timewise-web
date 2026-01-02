@@ -11,17 +11,12 @@ const API =
 
 /**
  * -----------------------------
- * Types
+ * Types (EMPLOYEES ONLY)
  * -----------------------------
+ * NOTE:
+ * - We intentionally do NOT define PayrollSummary here
+ * - Summary shape is adapted for the UI below
  */
-type PayrollSummary = {
-  totalRegularHours: number;
-  totalOvertimeHours: number;
-  totalDoubletimeHours: number;
-  totalPtoHours: number;
-  totalGrossPay: number;
-};
-
 type PayrollDay = {
   date: string;
   regularHours: number;
@@ -43,7 +38,13 @@ type PayrollEmployee = {
 };
 
 type PayrollResponse = {
-  summary: PayrollSummary;
+  summary: {
+    totalRegularHours: number;
+    totalOvertimeHours: number;
+    totalDoubletimeHours: number;
+    totalPtoHours: number;
+    totalGrossPay: number;
+  };
   employees: PayrollEmployee[];
 };
 
@@ -69,16 +70,14 @@ export default function PayrollDetailPage() {
 
         const res = await fetch(
           `${API}/api/payperiod-report/payroll/summary?payPeriodId=${payPeriodId}`,
-          {
-            credentials: "include", // ✅ tw_token cookie
-          }
+          { credentials: "include" }
         );
 
         if (!res.ok) {
           throw new Error(`API error ${res.status}`);
         }
 
-        const json: PayrollResponse = await res.json();
+        const json = await res.json();
         setData(json);
       } catch (err) {
         console.error("❌ Payroll load failed:", err);
@@ -110,6 +109,19 @@ export default function PayrollDetailPage() {
     return <div className="p-6">No payroll data found</div>;
   }
 
+  /**
+   * --------------------------------
+   * MAP API SUMMARY → UI SUMMARY
+   * --------------------------------
+   * This is the critical fix.
+   */
+  const summaryForCard = {
+    totalRegular: data.summary.totalRegularHours,
+    totalOvertime: data.summary.totalOvertimeHours,
+    totalDoubletime: data.summary.totalDoubletimeHours,
+    totalGross: data.summary.totalGrossPay,
+  };
+
   return (
     <div className="p-6 space-y-6">
       {/* PAGE TITLE */}
@@ -119,7 +131,7 @@ export default function PayrollDetailPage() {
 
       {/* TOP SUMMARY TOTALS + LOCK + EXPORT */}
       <PayrollSummaryCard
-        summary={data.summary}
+        summary={summaryForCard}
         payPeriodId={payPeriodId}
       />
 

@@ -2,61 +2,93 @@
 
 import { useEffect, useState } from "react";
 
-const API =
-  process.env.NEXT_PUBLIC_API_BASE_URL || "http://localhost:4000";
-
-const STORAGE_KEY = "tw_location_id";
+/**
+ * Frontend must ALWAYS use /api/*
+ * Next.js rewrites handle backend routing
+ */
 
 export function useDefaultLocation() {
   const [locationId, setLocationId] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    async function resolveLocation() {
-      // 1️⃣ If already stored, use it
-      const saved = localStorage.getItem(STORAGE_KEY);
-      if (saved) {
-        setLocationId(Number(saved));
-        setLoading(false);
-        return;
-      }
+    let cancelled = false;
 
-      // 2️⃣ Otherwise fetch locations
+    async function resolveLocation() {
       try {
-        const res = await fetch(`${API}/api/locations`, {
+        // 1️⃣ Load stored location (if any)
+        const stored = localStorage.getItem("tw_location_id");
+        const storedId =
+          stored && !isNaN(Number(stored)) ? Number(stored) : null;
+
+        // 2️⃣ Fetch locations from API
+        const res = await fetch("/api/location", {
           credentials: "include",
         });
 
-        if (!res.ok) throw new Error("Failed to load locations");
+        if (!res.ok) {
+          throw new Error("Failed to fetch locations");
+        }
 
-        const locations = await res.json();
+        const locations: any[] = await res.json();
 
-        // Only active locations
-        const active = locations.filter((l: any) => l.isActive);
+        // 3️⃣ Try to reuse stored location IF still active
+        if (storedId) {
+          const match = locations.find(
+            (l) => l.id === storedId && l.isActive !== false
+          );
 
-        if (active.length > 0) {
-          const defaultId = active[0].id;
-          localStorage.setItem(STORAGE_KEY, String(defaultId));
-          setLocationId(defaultId);
+          if (match) {
+            if (!cancelled) {
+              setLocationId(match.id);
+              setLoading(false);
+            }
+            return;
+          }
+        }
+
+        // 4️⃣ Fallback to first active location
+        const active = locations.find((l) => l.isActive !== false);
+
+        if (!active) {
+          if (!cancelled) {
+            setLocationId(null);
+            setLoading(false);
+          }
+          return;
+        }
+
+        // 5️⃣ Persist & set
+        localStorage.setItem("tw_location_id", String(active.id));
+
+        if (!cancelled) {
+          setLocationId(active.id);
+          setLoading(false);
         }
       } catch (err) {
-        console.error("Failed to resolve default location", err);
-      } finally {
-        setLoading(false);
+        console.error("❌ Failed to resolve default location", err);
+        if (!cancelled) {
+          setLocationId(null);
+          setLoading(false);
+        }
       }
     }
 
     resolveLocation();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
-  function changeLocation(id: number) {
-    localStorage.setItem(STORAGE_KEY, String(id));
+  function updateLocation(id: number) {
+    localStorage.setItem("tw_location_id", String(id));
     setLocationId(id);
   }
 
   return {
     locationId,
-    setLocationId: changeLocation,
+    setLocationId: updateLocation,
     loading,
   };
 }

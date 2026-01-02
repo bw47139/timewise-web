@@ -1,45 +1,50 @@
-import { money } from "./payrollMath";
+"use client";
 
 type Props = {
   summary: {
-    totalRegularHours: number;
-    totalOvertimeHours: number;
-    totalDoubletimeHours: number;
-    totalPtoHours: number;
-    totalGrossPay?: number;
+    totalRegular: number;
+    totalOvertime: number;
+    totalDoubletime: number;
+    totalGross: number;
   };
+  payPeriodId: number;
 };
 
-export default function PayrollSummaryCard({ summary }: Props) {
+export default function PayrollSummaryCard({
+  summary,
+  payPeriodId,
+}: Props) {
   return (
-    <div className="bg-white rounded shadow p-4 grid grid-cols-5 gap-4">
-      <Stat label="Regular Hours" value={summary.totalRegularHours} />
-      <Stat label="OT Hours" value={summary.totalOvertimeHours} />
-      <Stat label="DT Hours" value={summary.totalDoubletimeHours} />
-      <Stat label="PTO Hours" value={summary.totalPtoHours} />
-      <Stat
-        label="Gross Payroll"
-        value={money(summary.totalGrossPay)}
-        bold
-      />
-    </div>
-  );
-}
+    <div className="rounded-lg border bg-white p-4 shadow-sm">
+      <div className="mb-3">
+        <h2 className="text-lg font-semibold">Payroll Summary</h2>
+        <p className="text-sm text-gray-500">
+          Pay Period ID: {payPeriodId}
+        </p>
+      </div>
 
-function Stat({
-  label,
-  value,
-  bold,
-}: {
-  label: string;
-  value: any;
-  bold?: boolean;
-}) {
-  return (
-    <div>
-      <div className="text-sm text-gray-500">{label}</div>
-      <div className={`text-xl ${bold ? "font-bold" : ""}`}>
-        {value}
+      <div className="grid grid-cols-2 gap-3 text-sm">
+        <div className="flex justify-between">
+          <span>Regular Hours</span>
+          <span className="font-medium">{summary.totalRegular}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span>Overtime Hours</span>
+          <span className="font-medium">{summary.totalOvertime}</span>
+        </div>
+
+        <div className="flex justify-between">
+          <span>Doubletime Hours</span>
+          <span className="font-medium">{summary.totalDoubletime}</span>
+        </div>
+
+        <div className="flex justify-between col-span-2 border-t pt-2 mt-1">
+          <span className="font-semibold">Gross Pay</span>
+          <span className="font-semibold">
+            ${summary.totalGross.toFixed(2)}
+          </span>
+        </div>
       </div>
     </div>
   );

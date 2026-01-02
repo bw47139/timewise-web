@@ -38,7 +38,7 @@ export default function SettingsPage() {
   // -------------------------------------------------------
   // SAVE SETTINGS
   // -------------------------------------------------------
-  async function saveSettings(e: any) {
+  async function saveSettings(e: React.FormEvent) {
     e.preventDefault();
 
     try {
@@ -68,14 +68,16 @@ export default function SettingsPage() {
       <h1 className="text-2xl font-bold">Organization Settings</h1>
 
       <form onSubmit={saveSettings} className="space-y-4">
-
         {/* Enable Auto-Lunch */}
         <label className="flex items-center gap-2">
           <input
             type="checkbox"
             checked={settings.autoLunchEnabled}
             onChange={(e) =>
-              setSettings({ ...settings, autoLunchEnabled: e.target.checked })
+              setSettings({
+                ...settings,
+                autoLunchEnabled: e.target.checked,
+              })
             }
           />
           Enable Auto-Lunch Deduction
@@ -89,7 +91,10 @@ export default function SettingsPage() {
             className="border px-3 py-2 w-full"
             value={settings.autoLunchMinutes}
             onChange={(e) =>
-              setSettings({ ...settings, autoLunchMinutes: e.target.value })
+              setSettings({
+                ...settings,
+                autoLunchMinutes: Number(e.target.value),
+              })
             }
           />
         </div>
@@ -102,7 +107,10 @@ export default function SettingsPage() {
             className="border px-3 py-2 w-full"
             value={settings.autoLunchMinimumShift}
             onChange={(e) =>
-              setSettings({ ...settings, autoLunchMinimumShift: e.target.value })
+              setSettings({
+                ...settings,
+                autoLunchMinimumShift: Number(e.target.value),
+              })
             }
           />
         </div>
@@ -113,7 +121,10 @@ export default function SettingsPage() {
             type="checkbox"
             checked={settings.autoLunchDeductOnce}
             onChange={(e) =>
-              setSettings({ ...settings, autoLunchDeductOnce: e.target.checked })
+              setSettings({
+                ...settings,
+                autoLunchDeductOnce: e.target.checked,
+              })
             }
           />
           Deduct Lunch Only Once Per Shift

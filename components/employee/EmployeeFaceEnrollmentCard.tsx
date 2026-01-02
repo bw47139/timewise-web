@@ -5,6 +5,7 @@ import { useState } from "react";
 type Props = {
   employeeId: number;
   faceEnabled: boolean;
+  onUpdated?: () => Promise<void>; // ✅ ADD THIS
 };
 
 const API =
@@ -13,6 +14,7 @@ const API =
 export default function EmployeeFaceEnrollmentCard({
   employeeId,
   faceEnabled,
+  onUpdated,
 }: Props) {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -21,35 +23,55 @@ export default function EmployeeFaceEnrollmentCard({
     setLoading(true);
     setMessage(null);
 
-    const form = new FormData();
-    form.append("photo", file);
-    form.append("employeeId", String(employeeId));
+    try {
+      const form = new FormData();
+      form.append("photo", file);
+      form.append("employeeId", String(employeeId));
 
-    const res = await fetch(`${API}/api/face/enroll`, {
-      method: "POST",
-      credentials: "include",
-      body: form,
-    });
+      const res = await fetch(`${API}/api/face/enroll`, {
+        method: "POST",
+        credentials: "include",
+        body: form,
+      });
 
-    if (!res.ok) {
+      if (!res.ok) {
+        setMessage("Face enrollment failed");
+      } else {
+        setMessage("Face enrolled successfully");
+
+        // ✅ Notify parent to reload employee data
+        if (onUpdated) {
+          await onUpdated();
+        }
+      }
+    } catch (err) {
       setMessage("Face enrollment failed");
-    } else {
-      setMessage("Face enrolled successfully");
-      window.location.reload();
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   }
 
   async function removeFace() {
     setLoading(true);
+    setMessage(null);
 
-    await fetch(`${API}/api/face/${employeeId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
+    try {
+      await fetch(`${API}/api/face/${employeeId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
 
-    window.location.reload();
+      setMessage("Face enrollment removed");
+
+      // ✅ Notify parent to reload employee data
+      if (onUpdated) {
+        await onUpdated();
+      }
+    } catch (err) {
+      setMessage("Failed to remove face enrollment");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -81,6 +103,7 @@ export default function EmployeeFaceEnrollmentCard({
       {faceEnabled && (
         <button
           onClick={removeFace}
+          disabled={loading}
           className="text-sm text-red-600 underline"
         >
           Remove face enrollment

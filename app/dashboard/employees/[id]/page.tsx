@@ -4,7 +4,7 @@ import React, { useEffect, useState, FormEvent } from "react";
 import { useParams, useRouter } from "next/navigation";
 import RequireRole from "@/components/auth/RequireRole";
 import EmployeePTOCard from "@/components/employee/EmployeePTOCard";
-import EmployeePhotoCard from "@/components/employee/EmployeePhotoCard";
+import EmployeePhotoUploadCard from "@/components/employee/EmployeePhotoUploadCard";
 import EmployeeFaceEnrollmentCard from "@/components/employee/EmployeeFaceEnrollmentCard";
 import EmployeeTimeCardTab from "@/components/employee/EmployeeTimeCardTab";
 
@@ -1347,11 +1347,12 @@ export default function EmployeeDetailPage() {
           <div className="grid grid-cols-3 gap-6">
             {/* Photo + Face Enrollment */}
             <div className="col-span-1 space-y-6">
-              <EmployeePhotoCard
+              <EmployeePhotoUploadCard
                 employeeId={employeeId}
                 photoUrl={employee.photoUrl}
                 onUploaded={loadEmployee}
               />
+
               <EmployeeFaceEnrollmentCard
                 employeeId={employeeId}
                 faceEnabled={employee.faceEnabled || false}
