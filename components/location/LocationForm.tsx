@@ -105,7 +105,10 @@ export default function LocationForm({ initialData, onSaved }: Props) {
         case PayPeriodType.WEEKLY:
           return { ...base, weekStartDay: prev.weekStartDay ?? 1 };
         case PayPeriodType.BIWEEKLY:
-          return { ...base, biweeklyAnchorDate: prev.biweeklyAnchorDate || "" };
+          return {
+            ...base,
+            biweeklyAnchorDate: prev.biweeklyAnchorDate || "",
+          };
         case PayPeriodType.SEMIMONTHLY:
           return { ...base, semiMonthCut1: 1, semiMonthCut2: 16 };
         case PayPeriodType.MONTHLY:
@@ -168,7 +171,7 @@ export default function LocationForm({ initialData, onSaved }: Props) {
         <label className="block text-sm font-medium">Timezone</label>
         <Select
           value={form.timezone}
-          onValueChange={(v) => update("timezone", v)}
+          onChange={(e) => update("timezone", e.target.value)}
           options={TIMEZONES.map((tz) => ({
             value: tz,
             label: tz,
@@ -181,8 +184,8 @@ export default function LocationForm({ initialData, onSaved }: Props) {
         <label className="block text-sm font-medium">Industry</label>
         <Select
           value={String(form.industryId)}
-          onValueChange={(v) =>
-            update("industryId", v ? Number(v) : "")
+          onChange={(e) =>
+            update("industryId", e.target.value ? Number(e.target.value) : "")
           }
           options={[
             { value: "", label: "— Select Industry —" },
@@ -218,8 +221,8 @@ export default function LocationForm({ initialData, onSaved }: Props) {
         </label>
         <Select
           value={form.payPeriodType}
-          onValueChange={(v) =>
-            handlePayPeriodChange(v as PayPeriodType)
+          onChange={(e) =>
+            handlePayPeriodChange(e.target.value as PayPeriodType)
           }
           options={PAY_PERIOD_TYPES}
         />
@@ -233,8 +236,8 @@ export default function LocationForm({ initialData, onSaved }: Props) {
           </label>
           <Select
             value={String(form.weekStartDay)}
-            onValueChange={(v) =>
-              update("weekStartDay", Number(v))
+            onChange={(e) =>
+              update("weekStartDay", Number(e.target.value))
             }
             options={WEEK_START_DAYS}
           />
