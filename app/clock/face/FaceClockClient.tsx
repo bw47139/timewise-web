@@ -3,14 +3,18 @@
 import { useEffect, useRef, useState } from "react";
 import api from "@/lib/api";
 import toast from "react-hot-toast";
-import { useSearchParams } from "next/navigation";
 
 /**
- * NOTE:
- * This file assumes CameraCapture provides:
- *  - videoRef (HTMLVideoElement)
- *  - captureFrame(): Promise<File>
+ * FaceClockClient PROPS
+ * (required for ClockPage build typing)
  */
+export interface FaceClockClientProps {
+  deviceId: string;
+  locationId: number;
+  onFallbackToPin: () => void;
+  onSuccess: (message: string) => void;
+  onError: (error: string) => void;
+}
 
 interface Location {
   id: number;
@@ -24,10 +28,13 @@ interface FacePunchResult {
   locationName: string;
 }
 
-export default function FaceClockClient() {
-  const searchParams = useSearchParams();
-  const urlDeviceId = searchParams.get("deviceId");
-
+export default function FaceClockClient({
+  deviceId,
+  locationId,
+  onFallbackToPin,
+  onSuccess,
+  onError,
+}: FaceClockClientProps) {
   // --------------------------------------------------
   // DEVICE / LOCATION
   // --------------------------------------------------
@@ -54,35 +61,24 @@ export default function FaceClockClient() {
   const lastFrameRef = useRef<ImageData | null>(null);
 
   // --------------------------------------------------
-  // Resolve device → location
+  // Resolve device → location (SAFE)
   // --------------------------------------------------
   useEffect(() => {
     async function resolveDevice() {
       try {
-        let deviceId = localStorage.getItem("tw_device_id");
-
-        if (urlDeviceId) {
-          deviceId = urlDeviceId;
-          localStorage.setItem("tw_device_id", urlDeviceId);
-        }
-
-        if (!deviceId) {
-          toast.error("Clock not bound to a location");
-          return;
-        }
-
         const res = await api.get(`/clock/device/${deviceId}`);
         setLocation(res.data);
       } catch (err) {
         console.error(err);
         toast.error("Failed to resolve clock location");
+        onError("Failed to resolve clock location");
       } finally {
         setLoading(false);
       }
     }
 
     resolveDevice();
-  }, [urlDeviceId]);
+  }, [deviceId, onError]);
 
   // --------------------------------------------------
   // START CAMERA
@@ -173,7 +169,7 @@ export default function FaceClockClient() {
     try {
       const formData = new FormData();
       formData.append("photo", file);
-      formData.append("locationId", String(location.id));
+      formData.append("locationId", String(locationId));
 
       const res = await api.post("/clock/face", formData);
 
@@ -181,17 +177,24 @@ export default function FaceClockClient() {
         throw new Error("Face not recognized");
       }
 
-      setLastResult({
+      const result: FacePunchResult = {
         employeeName: res.data.employeeName,
         punchType: res.data.punchType,
         punchTime: new Date(res.data.punchedAt).toLocaleString(),
         locationName: location.name,
-      });
+      };
 
+      setLastResult(result);
       setMode("result");
+
+      onSuccess(`${result.employeeName} punched ${result.punchType}`);
+
       setTimeout(resetKiosk, 4000);
     } catch (err: any) {
-      toast.error(err?.response?.data?.error || "Face punch failed");
+      const msg =
+        err?.response?.data?.error || "Face punch failed";
+      toast.error(msg);
+      onError(msg);
       setTimeout(resetKiosk, 3000);
     }
   }
@@ -222,6 +225,12 @@ export default function FaceClockClient() {
     return (
       <div className="h-screen flex items-center justify-center text-red-600">
         Clock not bound to a location
+        <button
+          onClick={onFallbackToPin}
+          className="ml-4 underline text-blue-600"
+        >
+          Use PIN instead
+        </button>
       </div>
     );
   }
@@ -239,6 +248,16 @@ export default function FaceClockClient() {
         <div className="mt-10 px-10 py-6 border-4 border-white rounded-xl text-3xl animate-pulse">
           TAP TO SCAN FACE
         </div>
+
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            onFallbackToPin();
+          }}
+          className="mt-8 text-sm underline"
+        >
+          Use PIN instead
+        </button>
       </div>
     );
   }
