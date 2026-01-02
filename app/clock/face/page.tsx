@@ -1,16 +1,9 @@
-import { Suspense } from "react";
-import FaceClockClient from "./FaceClockClient";
+import { redirect } from "next/navigation";
 
-export default function Page() {
-  return (
-    <Suspense
-      fallback={
-        <div className="h-screen flex items-center justify-center text-2xl">
-          Loading Clock…
-        </div>
-      }
-    >
-      <FaceClockClient />
-    </Suspense>
-  );
+/**
+ * This route should never render FaceClockClient directly.
+ * The canonical kiosk lives at /clock.
+ */
+export default function FaceClockRedirectPage() {
+  redirect("/clock");
 }
