@@ -129,43 +129,49 @@ export default function LocationForm({ initialData, onSaved }: Props) {
       </h2>
 
       {/* Location Name */}
-      <Input
-        label="Location Name"
-        value={form.name}
-        onChange={(e) => update("name", e.target.value)}
-      />
+      <div>
+        <label className="block text-sm font-medium">Location Name</label>
+        <Input
+          value={form.name}
+          onChange={(e) => update("name", e.target.value)}
+        />
+      </div>
 
       {/* Timezone */}
-      <label className="block text-sm font-medium">Timezone</label>
-      <Select
-        value={form.timezone}
-        onChange={(e) => update("timezone", e.target.value)}
-      >
-        {TIMEZONES.map((tz) => (
-          <option key={tz} value={tz}>
-            {tz}
-          </option>
-        ))}
-      </Select>
+      <div>
+        <label className="block text-sm font-medium">Timezone</label>
+        <Select
+          value={form.timezone}
+          onChange={(e) => update("timezone", e.target.value)}
+        >
+          {TIMEZONES.map((tz) => (
+            <option key={tz} value={tz}>
+              {tz}
+            </option>
+          ))}
+        </Select>
+      </div>
 
       {/* Industry */}
-      <label className="block text-sm font-medium">Industry</label>
-      <Select
-        value={String(form.industryId)}
-        onChange={(e) =>
-          update(
-            "industryId",
-            e.target.value ? Number(e.target.value) : ""
-          )
-        }
-      >
-        <option value="">— Select Industry —</option>
-        {industries.map((i) => (
-          <option key={i.id} value={i.id}>
-            {i.name}
-          </option>
-        ))}
-      </Select>
+      <div>
+        <label className="block text-sm font-medium">Industry</label>
+        <Select
+          value={String(form.industryId)}
+          onChange={(e) =>
+            update(
+              "industryId",
+              e.target.value ? Number(e.target.value) : ""
+            )
+          }
+        >
+          <option value="">— Select Industry —</option>
+          {industries.map((i) => (
+            <option key={i.id} value={i.id}>
+              {i.name}
+            </option>
+          ))}
+        </Select>
+      </div>
 
       {/* Active */}
       <div className="flex items-center gap-3">
@@ -185,23 +191,27 @@ export default function LocationForm({ initialData, onSaved }: Props) {
       </div>
 
       {/* Pay Period Type */}
-      <label className="block text-sm font-medium">Pay Period Type</label>
-      <Select
-        value={form.payPeriodType}
-        onChange={(e) =>
-          handlePayPeriodChange(e.target.value as PayPeriodType)
-        }
-      >
-        {PAY_PERIOD_TYPES.map((p) => (
-          <option key={p.value} value={p.value}>
-            {p.label}
-          </option>
-        ))}
-      </Select>
+      <div>
+        <label className="block text-sm font-medium">
+          Pay Period Type
+        </label>
+        <Select
+          value={form.payPeriodType}
+          onChange={(e) =>
+            handlePayPeriodChange(e.target.value as PayPeriodType)
+          }
+        >
+          {PAY_PERIOD_TYPES.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
+          ))}
+        </Select>
+      </div>
 
       {/* Weekly */}
       {form.payPeriodType === PayPeriodType.WEEKLY && (
-        <>
+        <div>
           <label className="block text-sm font-medium">
             Week Starts On
           </label>
@@ -217,16 +227,20 @@ export default function LocationForm({ initialData, onSaved }: Props) {
               </option>
             ))}
           </Select>
-        </>
+        </div>
       )}
 
       {/* Cutoff Time */}
-      <Input
-        label="Daily Cutoff Time"
-        type="time"
-        value={form.cutoffTime}
-        onChange={(e) => update("cutoffTime", e.target.value)}
-      />
+      <div>
+        <label className="block text-sm font-medium">
+          Daily Cutoff Time
+        </label>
+        <Input
+          type="time"
+          value={form.cutoffTime}
+          onChange={(e) => update("cutoffTime", e.target.value)}
+        />
+      </div>
 
       <Button onClick={save}>
         {initialData ? "Save Changes" : "Create Location"}
