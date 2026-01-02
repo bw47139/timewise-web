@@ -61,19 +61,14 @@ interface Industry {
 
 export default function LocationForm({ initialData, onSaved }: Props) {
   const [industries, setIndustries] = useState<Industry[]>([]);
-
   const isDefaultLocation = Boolean(initialData?.isDefault);
 
   const [form, setForm] = useState({
     name: initialData?.name ?? "",
     timezone: initialData?.timezone ?? "America/New_York",
     isActive: initialData?.isActive ?? true,
-
     industryId: initialData?.industryId ?? "",
-
-    payPeriodType:
-      initialData?.payPeriodType ?? PayPeriodType.WEEKLY,
-
+    payPeriodType: initialData?.payPeriodType ?? PayPeriodType.WEEKLY,
     weekStartDay: initialData?.weekStartDay ?? 1,
     biweeklyAnchorDate: initialData?.biweeklyAnchorDate ?? "",
     semiMonthCut1: initialData?.semiMonthCut1 ?? 1,
@@ -86,42 +81,18 @@ export default function LocationForm({ initialData, onSaved }: Props) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  /* ======================================================
-     AUTO-ADJUST PAYROLL FIELDS
-  ====================================================== */
   function handlePayPeriodChange(type: PayPeriodType) {
-    setForm((prev) => {
-      const base = {
-        ...prev,
-        payPeriodType: type,
-        weekStartDay: 1,
-        biweeklyAnchorDate: "",
-        semiMonthCut1: 1,
-        semiMonthCut2: 16,
-        monthlyCutDay: 1,
-      };
-
-      switch (type) {
-        case PayPeriodType.WEEKLY:
-          return { ...base, weekStartDay: prev.weekStartDay ?? 1 };
-        case PayPeriodType.BIWEEKLY:
-          return {
-            ...base,
-            biweeklyAnchorDate: prev.biweeklyAnchorDate || "",
-          };
-        case PayPeriodType.SEMIMONTHLY:
-          return { ...base, semiMonthCut1: 1, semiMonthCut2: 16 };
-        case PayPeriodType.MONTHLY:
-          return { ...base, monthlyCutDay: 1 };
-        default:
-          return base;
-      }
-    });
+    setForm((prev) => ({
+      ...prev,
+      payPeriodType: type,
+      weekStartDay: 1,
+      biweeklyAnchorDate: "",
+      semiMonthCut1: 1,
+      semiMonthCut2: 16,
+      monthlyCutDay: 1,
+    }));
   }
 
-  /* ======================================================
-     LOAD INDUSTRIES
-  ====================================================== */
   useEffect(() => {
     fetch("/api/industry", { credentials: "include" })
       .then((r) => r.json())
@@ -135,11 +106,11 @@ export default function LocationForm({ initialData, onSaved }: Props) {
       {
         method: initialData ? "PATCH" : "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           ...form,
           industryId: form.industryId || null,
         }),
-        credentials: "include",
       }
     );
 
@@ -158,46 +129,45 @@ export default function LocationForm({ initialData, onSaved }: Props) {
       </h2>
 
       {/* Location Name */}
-      <div>
-        <label className="block text-sm font-medium">Location Name</label>
-        <Input
-          value={form.name}
-          onChange={(e) => update("name", e.target.value)}
-        />
-      </div>
+      <Input
+        label="Location Name"
+        value={form.name}
+        onChange={(e) => update("name", e.target.value)}
+      />
 
       {/* Timezone */}
-      <div>
-        <label className="block text-sm font-medium">Timezone</label>
-        <Select
-          value={form.timezone}
-          onChange={(e) => update("timezone", e.target.value)}
-          options={TIMEZONES.map((tz) => ({
-            value: tz,
-            label: tz,
-          }))}
-        />
-      </div>
+      <label className="block text-sm font-medium">Timezone</label>
+      <Select
+        value={form.timezone}
+        onChange={(e) => update("timezone", e.target.value)}
+      >
+        {TIMEZONES.map((tz) => (
+          <option key={tz} value={tz}>
+            {tz}
+          </option>
+        ))}
+      </Select>
 
       {/* Industry */}
-      <div>
-        <label className="block text-sm font-medium">Industry</label>
-        <Select
-          value={String(form.industryId)}
-          onChange={(e) =>
-            update("industryId", e.target.value ? Number(e.target.value) : "")
-          }
-          options={[
-            { value: "", label: "— Select Industry —" },
-            ...industries.map((i) => ({
-              value: String(i.id),
-              label: i.name,
-            })),
-          ]}
-        />
-      </div>
+      <label className="block text-sm font-medium">Industry</label>
+      <Select
+        value={String(form.industryId)}
+        onChange={(e) =>
+          update(
+            "industryId",
+            e.target.value ? Number(e.target.value) : ""
+          )
+        }
+      >
+        <option value="">— Select Industry —</option>
+        {industries.map((i) => (
+          <option key={i.id} value={i.id}>
+            {i.name}
+          </option>
+        ))}
+      </Select>
 
-      {/* Active (LOCKED FOR DEFAULT LOCATION) */}
+      {/* Active */}
       <div className="flex items-center gap-3">
         <Switch
           checked={form.isActive}
@@ -215,22 +185,23 @@ export default function LocationForm({ initialData, onSaved }: Props) {
       </div>
 
       {/* Pay Period Type */}
-      <div>
-        <label className="block text-sm font-medium">
-          Pay Period Type
-        </label>
-        <Select
-          value={form.payPeriodType}
-          onChange={(e) =>
-            handlePayPeriodChange(e.target.value as PayPeriodType)
-          }
-          options={PAY_PERIOD_TYPES}
-        />
-      </div>
+      <label className="block text-sm font-medium">Pay Period Type</label>
+      <Select
+        value={form.payPeriodType}
+        onChange={(e) =>
+          handlePayPeriodChange(e.target.value as PayPeriodType)
+        }
+      >
+        {PAY_PERIOD_TYPES.map((p) => (
+          <option key={p.value} value={p.value}>
+            {p.label}
+          </option>
+        ))}
+      </Select>
 
       {/* Weekly */}
       {form.payPeriodType === PayPeriodType.WEEKLY && (
-        <div>
+        <>
           <label className="block text-sm font-medium">
             Week Starts On
           </label>
@@ -239,78 +210,23 @@ export default function LocationForm({ initialData, onSaved }: Props) {
             onChange={(e) =>
               update("weekStartDay", Number(e.target.value))
             }
-            options={WEEK_START_DAYS}
-          />
-        </div>
-      )}
-
-      {/* Bi-Weekly */}
-      {form.payPeriodType === PayPeriodType.BIWEEKLY && (
-        <div>
-          <label className="block text-sm font-medium">
-            Anchor Date
-          </label>
-          <Input
-            type="date"
-            value={form.biweeklyAnchorDate}
-            onChange={(e) =>
-              update("biweeklyAnchorDate", e.target.value)
-            }
-          />
-        </div>
-      )}
-
-      {/* Semi-Monthly */}
-      {form.payPeriodType === PayPeriodType.SEMIMONTHLY && (
-        <div className="flex gap-4">
-          <div>
-            <label>Cutoff 1</label>
-            <Input
-              type="number"
-              value={form.semiMonthCut1}
-              onChange={(e) =>
-                update("semiMonthCut1", Number(e.target.value))
-              }
-            />
-          </div>
-          <div>
-            <label>Cutoff 2</label>
-            <Input
-              type="number"
-              value={form.semiMonthCut2}
-              onChange={(e) =>
-                update("semiMonthCut2", Number(e.target.value))
-              }
-            />
-          </div>
-        </div>
-      )}
-
-      {/* Monthly */}
-      {form.payPeriodType === PayPeriodType.MONTHLY && (
-        <div>
-          <label>Monthly Cut Day</label>
-          <Input
-            type="number"
-            value={form.monthlyCutDay}
-            onChange={(e) =>
-              update("monthlyCutDay", Number(e.target.value))
-            }
-          />
-        </div>
+          >
+            {WEEK_START_DAYS.map((d) => (
+              <option key={d.value} value={d.value}>
+                {d.label}
+              </option>
+            ))}
+          </Select>
+        </>
       )}
 
       {/* Cutoff Time */}
-      <div>
-        <label>Daily Cutoff Time</label>
-        <Input
-          type="time"
-          value={form.cutoffTime}
-          onChange={(e) =>
-            update("cutoffTime", e.target.value)
-          }
-        />
-      </div>
+      <Input
+        label="Daily Cutoff Time"
+        type="time"
+        value={form.cutoffTime}
+        onChange={(e) => update("cutoffTime", e.target.value)}
+      />
 
       <Button onClick={save}>
         {initialData ? "Save Changes" : "Create Location"}
