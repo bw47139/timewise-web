@@ -19,10 +19,10 @@ import {
 } from "lucide-react";
 
 /**
- * ⚠️ IMPORTANT (CANONICAL)
- * Frontend MUST call /api/*
- * NEXT_PUBLIC_API_BASE_URL = origin only
- * Next.js proxy handles backend routing
+ * ⚠️ CANONICAL RULES
+ * - Frontend MUST call /api/*
+ * - NEXT_PUBLIC_API_BASE_URL = origin only
+ * - Auth via tw_token cookie
  */
 
 interface Location {
@@ -40,45 +40,16 @@ export default function DashboardLayout({
   const user = auth.user;
 
   /* ---------------------------------------------
-     🔑 Location state
+     🔑 Default location guard
   --------------------------------------------- */
-  const {
-    locationId,
-    loading: locationLoading,
-  } = useDefaultLocation();
+  const { locationId, loading: locationLoading } = useDefaultLocation();
 
-  const [locations, setLocations] = useState<Location[]>([]);
   const [collapsed, setCollapsed] = useState(false);
-
-  /* ---------------------------------------------
-     ✅ Load locations
-  --------------------------------------------- */
-  useEffect(() => {
-    async function loadLocations() {
-      try {
-        const res = await fetch("/api/location", {
-          credentials: "include",
-        });
-
-        if (!res.ok) {
-          console.error("Failed to load locations");
-          return;
-        }
-
-        const data = await res.json();
-        setLocations(data);
-      } catch (err) {
-        console.error("Failed to load locations", err);
-      }
-    }
-
-    loadLocations();
-  }, []);
 
   /* ---------------------------------------------
      Guards
   --------------------------------------------- */
-  if (locationLoading || auth.loading) {
+  if (auth.loading || locationLoading) {
     return (
       <RequireAuth>
         <div className="flex h-screen items-center justify-center bg-gray-100 text-sm text-gray-600">
@@ -92,7 +63,8 @@ export default function DashboardLayout({
     return (
       <RequireAuth>
         <div className="flex h-screen items-center justify-center bg-gray-100 text-sm text-red-600">
-          No active location found. Please create one in Settings → Locations.
+          No active location found. Please create one in
+          <span className="ml-1 font-semibold">Settings → Locations</span>.
         </div>
       </RequireAuth>
     );
@@ -110,12 +82,13 @@ export default function DashboardLayout({
   return (
     <RequireAuth>
       <div className="min-h-screen flex bg-gray-100">
+        {/* Sidebar */}
         <aside
           className={`bg-white shadow-md p-4 flex flex-col transition-all ${
             collapsed ? "w-20" : "w-64"
           }`}
         >
-          {/* Collapse */}
+          {/* Collapse Button */}
           <SidebarTooltip label={collapsed ? "Expand" : "Collapse"}>
             <button
               onClick={() => setCollapsed(!collapsed)}
@@ -222,6 +195,7 @@ export default function DashboardLayout({
           </div>
         </aside>
 
+        {/* Main Content */}
         <main className="flex-1 p-6">{children}</main>
       </div>
     </RequireAuth>
