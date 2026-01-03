@@ -14,6 +14,8 @@ import {
   LogOut,
   ChevronRight,
   ChevronLeft,
+  Building2,
+  MapPin,
 } from "lucide-react";
 
 /**
@@ -49,7 +51,7 @@ export default function DashboardLayout({
   const [collapsed, setCollapsed] = useState(false);
 
   /* ---------------------------------------------
-     ✅ Load locations (CORRECT endpoint)
+     ✅ Load locations
   --------------------------------------------- */
   useEffect(() => {
     async function loadLocations() {
@@ -161,13 +163,27 @@ export default function DashboardLayout({
               {!collapsed && <span>Employees</span>}
             </Link>
 
-            {/* Settings */}
+            {/* Settings Header */}
             {!collapsed && (
               <div className="mt-4 px-3 text-xs font-semibold text-gray-400 uppercase">
                 Settings
               </div>
             )}
 
+            {/* Organization */}
+            <Link
+              href="/dashboard/organization"
+              className={`flex items-center gap-2 px-3 py-2 rounded-md ${
+                pathname.startsWith("/dashboard/organization")
+                  ? "text-blue-600 font-semibold"
+                  : "text-gray-700"
+              }`}
+            >
+              <Building2 className="w-4 h-4" />
+              {!collapsed && <span>Organization</span>}
+            </Link>
+
+            {/* Locations */}
             <Link
               href="/dashboard/settings/locations"
               className={`flex items-center gap-2 px-3 py-2 rounded-md ${
@@ -176,6 +192,7 @@ export default function DashboardLayout({
                   : "text-gray-700"
               }`}
             >
+              <MapPin className="w-4 h-4" />
               {!collapsed && <span>Locations</span>}
             </Link>
           </nav>
