@@ -2,45 +2,35 @@ import { NextRequest, NextResponse } from "next/server";
 
 /**
  * Middleware runs before every request
- * 🔐 Responsibility: AUTH ONLY
- * ❌ NO location / organization logic here
+ * We protect /dashboard routes using tw_token cookie
  */
 export function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl;
 
-  // --------------------------------------------------
-  // ✅ Public routes (NO auth required)
-  // --------------------------------------------------
+  // ✅ ALWAYS ALLOW AUTH + API ROUTES
   if (
     pathname.startsWith("/login") ||
+    pathname.startsWith("/api/auth") ||
     pathname.startsWith("/_next") ||
-    pathname.startsWith("/favicon.ico") ||
-    pathname.startsWith("/api/health")
+    pathname.startsWith("/favicon.ico")
   ) {
     return NextResponse.next();
   }
 
-  // --------------------------------------------------
-  // 🔐 Protect dashboard routes with tw_token only
-  // --------------------------------------------------
+  // 🔒 Protect dashboard routes only
   if (pathname.startsWith("/dashboard")) {
     const token = req.cookies.get("tw_token")?.value;
 
     if (!token) {
-      const loginUrl = req.nextUrl.clone();
-      loginUrl.pathname = "/login";
-      return NextResponse.redirect(loginUrl);
+      return NextResponse.redirect(new URL("/login", req.url));
     }
   }
 
-  // --------------------------------------------------
-  // ✅ Allow request
-  // --------------------------------------------------
   return NextResponse.next();
 }
 
 /**
- * Apply middleware ONLY to dashboard routes
+ * Apply middleware ONLY to dashboard pages
  */
 export const config = {
   matcher: ["/dashboard/:path*"],

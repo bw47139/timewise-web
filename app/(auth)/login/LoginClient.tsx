@@ -17,19 +17,23 @@ export default function LoginClient() {
     setLoading(true);
 
     try {
-      // ✅ IMPORTANT:
-      // Always call /api/* so cookies are set on the frontend origin
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({
-          email,
-          password,
-        }),
+        body: JSON.stringify({ email, password }),
       });
+
+      const contentType = res.headers.get("content-type");
+
+      // 🚨 IMPORTANT GUARD
+      if (!contentType || !contentType.includes("application/json")) {
+        throw new Error(
+          "Login failed: server returned invalid response. Please refresh and try again."
+        );
+      }
 
       const data = await res.json();
 
@@ -37,8 +41,8 @@ export default function LoginClient() {
         throw new Error(data.error || "Login failed");
       }
 
-      // ✅ Login successful → redirect to dashboard
-      router.push("/dashboard");
+      // ✅ SUCCESS
+      router.replace("/dashboard");
     } catch (err: any) {
       setError(err.message || "Login failed");
     } finally {

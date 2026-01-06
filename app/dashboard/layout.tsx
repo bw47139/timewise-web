@@ -5,7 +5,7 @@ import SidebarTooltip from "@/components/SidebarTooltip";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuthUser } from "@/components/useAuthUser";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useDefaultLocation } from "@/components/location/useDefaultLocation";
 
 import {
@@ -20,15 +20,9 @@ import {
 
 /**
  * ⚠️ CANONICAL RULES
- * - Frontend MUST call /api/*
- * - NEXT_PUBLIC_API_BASE_URL = origin only
  * - Auth via tw_token cookie
+ * - Settings pages MUST NOT require default location
  */
-
-interface Location {
-  id: number;
-  name: string;
-}
 
 export default function DashboardLayout({
   children,
@@ -39,17 +33,18 @@ export default function DashboardLayout({
   const auth = useAuthUser();
   const user = auth.user;
 
-  /* ---------------------------------------------
-     🔑 Default location guard
-  --------------------------------------------- */
+  const isSettingsPage =
+    pathname.startsWith("/dashboard/settings") ||
+    pathname.startsWith("/dashboard/organization");
+
   const { locationId, loading: locationLoading } = useDefaultLocation();
 
   const [collapsed, setCollapsed] = useState(false);
 
   /* ---------------------------------------------
-     Guards
+     Auth guard (always)
   --------------------------------------------- */
-  if (auth.loading || locationLoading) {
+  if (auth.loading) {
     return (
       <RequireAuth>
         <div className="flex h-screen items-center justify-center bg-gray-100 text-sm text-gray-600">
@@ -59,7 +54,23 @@ export default function DashboardLayout({
     );
   }
 
-  if (!locationId) {
+  /* ---------------------------------------------
+     Default location loading (ONLY non-settings)
+  --------------------------------------------- */
+  if (!isSettingsPage && locationLoading) {
+    return (
+      <RequireAuth>
+        <div className="flex h-screen items-center justify-center bg-gray-100 text-sm text-gray-600">
+          Loading location…
+        </div>
+      </RequireAuth>
+    );
+  }
+
+  /* ---------------------------------------------
+     Default location required (ONLY non-settings)
+  --------------------------------------------- */
+  if (!isSettingsPage && !locationId) {
     return (
       <RequireAuth>
         <div className="flex h-screen items-center justify-center bg-gray-100 text-sm text-red-600">
@@ -88,7 +99,6 @@ export default function DashboardLayout({
             collapsed ? "w-20" : "w-64"
           }`}
         >
-          {/* Collapse Button */}
           <SidebarTooltip label={collapsed ? "Expand" : "Collapse"}>
             <button
               onClick={() => setCollapsed(!collapsed)}
@@ -102,15 +112,12 @@ export default function DashboardLayout({
             </button>
           </SidebarTooltip>
 
-          {/* Logo */}
           <h2 className="text-xl font-bold mb-4 flex items-center gap-2">
             <LayoutDashboard className="w-5 h-5 text-blue-600" />
             {!collapsed && <span>TimeWise Clock</span>}
           </h2>
 
-          {/* Navigation */}
           <nav className="space-y-1 flex-1">
-            {/* Dashboard */}
             <Link
               href="/dashboard"
               className={`flex items-center gap-2 px-3 py-2 rounded-md ${
@@ -123,7 +130,6 @@ export default function DashboardLayout({
               {!collapsed && <span>Dashboard</span>}
             </Link>
 
-            {/* Employees */}
             <Link
               href="/dashboard/employees"
               className={`flex items-center gap-2 px-3 py-2 rounded-md ${
@@ -136,14 +142,12 @@ export default function DashboardLayout({
               {!collapsed && <span>Employees</span>}
             </Link>
 
-            {/* Settings Header */}
             {!collapsed && (
               <div className="mt-4 px-3 text-xs font-semibold text-gray-400 uppercase">
                 Settings
               </div>
             )}
 
-            {/* Organization */}
             <Link
               href="/dashboard/organization"
               className={`flex items-center gap-2 px-3 py-2 rounded-md ${
@@ -156,7 +160,6 @@ export default function DashboardLayout({
               {!collapsed && <span>Organization</span>}
             </Link>
 
-            {/* Locations */}
             <Link
               href="/dashboard/settings/locations"
               className={`flex items-center gap-2 px-3 py-2 rounded-md ${
@@ -170,7 +173,6 @@ export default function DashboardLayout({
             </Link>
           </nav>
 
-          {/* User Panel */}
           <div className="border-t pt-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold">
@@ -195,7 +197,6 @@ export default function DashboardLayout({
           </div>
         </aside>
 
-        {/* Main Content */}
         <main className="flex-1 p-6">{children}</main>
       </div>
     </RequireAuth>

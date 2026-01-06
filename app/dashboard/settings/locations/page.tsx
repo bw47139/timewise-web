@@ -12,10 +12,6 @@ import { Loader2, Plus, Pencil, Power } from "lucide-react";
  * Next.js rewrites handle backend routing
  */
 
-/* -------------------------------------------------------
-   Constants
-------------------------------------------------------- */
-
 const TIMEZONES = [
   "America/New_York",
   "America/Chicago",
@@ -30,10 +26,6 @@ const PAY_PERIOD_TYPES = [
   { value: "MONTHLY", label: "Monthly" },
 ];
 
-/* -------------------------------------------------------
-   Types
-------------------------------------------------------- */
-
 interface Location {
   id: number;
   name: string;
@@ -43,10 +35,6 @@ interface Location {
   payPeriodType?: string | null;
   isActive: boolean;
 }
-
-/* -------------------------------------------------------
-   Page
-------------------------------------------------------- */
 
 export default function LocationsSettingsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -67,7 +55,6 @@ export default function LocationsSettingsPage() {
   /* -------------------------------------------------------
      Load locations
   ------------------------------------------------------- */
-
   async function loadLocations() {
     setLoading(true);
     try {
@@ -75,13 +62,18 @@ export default function LocationsSettingsPage() {
         credentials: "include",
       });
 
+      if (res.status === 401) {
+        // 🔒 DO NOT LOG OUT — auth still valid
+        console.warn("Unauthorized loading locations");
+        return;
+      }
+
       if (!res.ok) throw new Error("Failed to load locations");
 
       const data = await res.json();
       setLocations(data);
     } catch (err) {
       console.error("Load locations failed:", err);
-      alert("Failed to load locations");
     } finally {
       setLoading(false);
     }
@@ -94,7 +86,6 @@ export default function LocationsSettingsPage() {
   /* -------------------------------------------------------
      Modal helpers
   ------------------------------------------------------- */
-
   function openAdd() {
     setEditing(null);
     setForm({
@@ -120,9 +111,8 @@ export default function LocationsSettingsPage() {
   }
 
   /* -------------------------------------------------------
-     Save location
+     Save location (PATCH — CANONICAL)
   ------------------------------------------------------- */
-
   async function saveLocation() {
     if (!form.name || !form.timezone) {
       alert("Location name and timezone are required.");
@@ -133,12 +123,17 @@ export default function LocationsSettingsPage() {
       const res = await fetch(
         editing ? `/api/location/${editing.id}` : "/api/location",
         {
-          method: editing ? "PUT" : "POST",
+          method: editing ? "PATCH" : "POST", // ✅ FIXED
           headers: { "Content-Type": "application/json" },
           credentials: "include",
           body: JSON.stringify(form),
         }
       );
+
+      if (res.status === 401) {
+        alert("You are not authorized to modify locations.");
+        return;
+      }
 
       if (!res.ok) {
         const text = await res.text();
@@ -156,13 +151,8 @@ export default function LocationsSettingsPage() {
   /* -------------------------------------------------------
      Enable / Disable location
   ------------------------------------------------------- */
-
   async function toggleLocation(loc: Location) {
-    if (
-      !confirm(
-        `${loc.isActive ? "Disable" : "Enable"} this location?`
-      )
-    )
+    if (!confirm(`${loc.isActive ? "Disable" : "Enable"} this location?`))
       return;
 
     try {
@@ -172,6 +162,11 @@ export default function LocationsSettingsPage() {
         credentials: "include",
         body: JSON.stringify({ isActive: !loc.isActive }),
       });
+
+      if (res.status === 401) {
+        alert("You are not authorized to change status.");
+        return;
+      }
 
       if (!res.ok) {
         const text = await res.text();
@@ -188,12 +183,10 @@ export default function LocationsSettingsPage() {
   /* -------------------------------------------------------
      Render
   ------------------------------------------------------- */
-
   return (
     <RequireAuth>
       <RequireRole allow={["ADMIN"]}>
         <div className="space-y-6">
-          {/* Header */}
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-xl font-semibold">Locations</h1>
@@ -211,7 +204,6 @@ export default function LocationsSettingsPage() {
             </button>
           </div>
 
-          {/* Table */}
           <div className="rounded-xl border bg-card">
             {loading ? (
               <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
@@ -265,7 +257,6 @@ export default function LocationsSettingsPage() {
           </div>
         </div>
 
-        {/* Modal */}
         {modalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
             <div className="w-full max-w-lg rounded-xl bg-card p-6">
