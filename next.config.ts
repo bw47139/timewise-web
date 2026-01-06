@@ -2,16 +2,19 @@ import type { NextConfig } from "next";
 
 /**
  * ------------------------------------------------------------
- * Next.js config
+ * Next.js config (CANONICAL — DO NOT DEVIATE)
  *
- * IMPORTANT RULE (canonical for TimeWise):
- * - Browser code MUST call /api/*
- * - Next.js rewrites proxy /api/* to Render backend
- * - Cookies remain on frontend origin (localhost / prod domain)
+ * TimeWise Rules:
+ * - Frontend ALWAYS calls /api/*
+ * - Next.js proxies /api/* → backend Render service
+ * - Cookies stay on frontend domain (timewise-web.onrender.com)
+ * - Backend never exposed directly to browser
  * ------------------------------------------------------------
  */
 
 const nextConfig: NextConfig = {
+  reactStrictMode: true,
+
   async rewrites() {
     return [
       {
