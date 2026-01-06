@@ -2,26 +2,22 @@ import type { NextConfig } from "next";
 
 /**
  * ------------------------------------------------------------
- * Next.js config (AUTHORITATIVE for TimeWise)
+ * TimeWise – Next.js config (PRODUCTION SAFE)
  *
- * RULES:
- * - Browser ALWAYS calls /api/*
- * - Next.js proxies /api/* → backend (Render)
- * - Backend URL comes from ENV (Render-safe)
+ * - Browser always calls /api/*
+ * - Next.js proxies /api/* to backend
+ * - Cookies stay on frontend origin
  * ------------------------------------------------------------
  */
 
-const API_PROXY_TARGET =
-  process.env.API_PROXY_TARGET ||
-  process.env.NEXT_PUBLIC_API_BASE_URL ||
-  "http://localhost:4000";
-
 const nextConfig: NextConfig = {
+  output: "standalone",
+
   async rewrites() {
     return [
       {
         source: "/api/:path*",
-        destination: `${API_PROXY_TARGET}/api/:path*`,
+        destination: "https://timewise-api-1.onrender.com/api/:path*",
       },
     ];
   },
